@@ -21,12 +21,12 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     kotlin {
-        jvmToolchain(11)
+        jvmToolchain(17)
     }
 
     buildFeatures {
@@ -34,14 +34,6 @@ android {
         buildConfig = false
     }
 
-    lintOptions {
-        warningsAsErrors true
-        abortOnError true
-        // We don't want to impose RTL on consuming applications.
-        disable 'RtlEnabled'
-        // Don't fail build if some dependencies outdated
-        disable 'GradleDependency'
-    }
 
     testOptions {
         unitTests {
@@ -59,6 +51,11 @@ android {
             withSourcesJar()
             withJavadocJar()
         }
+    }
+    lint {
+        abortOnError true
+        disable 'RtlEnabled', 'GradleDependency'
+        warningsAsErrors true
     }
 }
 
