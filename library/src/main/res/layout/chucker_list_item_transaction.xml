@@ -74,7 +74,7 @@
         android:ellipsize="end"
         android:maxLines="2"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/ssl"
+        app:layout_constraintStart_toEndOf="@+id/mocked"
         app:layout_constraintTop_toBottomOf="@+id/graphqlPath"
         app:layout_goneMarginStart="0dp"
         tools:text="example.com" />
@@ -88,6 +88,18 @@
         app:layout_constraintStart_toStartOf="@+id/path"
         app:layout_constraintTop_toTopOf="@+id/host"
         tools:src="@drawable/chucker_ic_https" />
+
+    <ImageView
+        android:id="@+id/mocked"
+        android:layout_width="@dimen/chucker_doub_grid"
+        android:layout_height="@dimen/chucker_doub_grid"
+        android:contentDescription="@string/chucker_mocked"
+        android:layout_marginStart="@dimen/chucker_half_grid"
+        android:src="@drawable/chucker_ic_mock"
+        app:layout_constraintBottom_toBottomOf="@id/host"
+        app:layout_constraintStart_toEndOf="@+id/ssl"
+        app:layout_constraintTop_toTopOf="@+id/host"
+        app:tint="@color/chucker_background_span_color" />
 
     <TextView
         android:id="@+id/timeStart"

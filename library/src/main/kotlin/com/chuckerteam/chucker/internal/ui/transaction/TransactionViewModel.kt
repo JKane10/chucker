@@ -5,9 +5,11 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.map
+import androidx.lifecycle.viewModelScope
 import com.chuckerteam.chucker.internal.data.entity.HttpTransaction
 import com.chuckerteam.chucker.internal.data.repository.RepositoryProvider
 import com.chuckerteam.chucker.internal.support.combineLatest
+import kotlinx.coroutines.launch
 
 internal class TransactionViewModel(transactionId: Long) : ViewModel() {
 
@@ -48,6 +50,20 @@ internal class TransactionViewModel(transactionId: Long) : ViewModel() {
 
     fun encodeUrl(encode: Boolean) {
         mutableEncodeUrl.value = encode
+    }
+
+    /**
+     * Writes mock response body and other meta info to the database.
+     */
+    fun writeMock(transaction: HttpTransaction, mockedBody: String, isMocked: Boolean) {
+        viewModelScope.launch {
+            if (isMocked) {
+                transaction.mockDate = System.currentTimeMillis()
+                transaction.mockResponseBody = mockedBody
+                transaction.isResponseBodyMocked = true
+            }
+            RepositoryProvider.transaction().updateTransaction(transaction)
+        }
     }
 }
 

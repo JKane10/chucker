@@ -3,13 +3,18 @@ package com.chuckerteam.chucker.api
 import android.content.Context
 import androidx.annotation.VisibleForTesting
 import com.chuckerteam.chucker.internal.data.entity.HttpTransaction
+import com.chuckerteam.chucker.internal.data.repository.RepositoryProvider
 import com.chuckerteam.chucker.internal.support.CacheDirectoryProvider
 import com.chuckerteam.chucker.internal.support.PlainTextDecoder
 import com.chuckerteam.chucker.internal.support.RequestProcessor
 import com.chuckerteam.chucker.internal.support.ResponseProcessor
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Interceptor
+import okhttp3.Protocol
+import okhttp3.Request
 import okhttp3.Response
+import okhttp3.ResponseBody.Companion.toResponseBody
 import java.io.IOException
 
 /**
@@ -36,6 +41,8 @@ public class ChuckerInterceptor private constructor(
     private val decoders = builder.decoders + BUILT_IN_DECODERS
 
     private val collector = builder.collector ?: ChuckerCollector(builder.context)
+
+    private val mockEnabled = builder.mockEnabled
 
     private val requestProcessor = RequestProcessor(
         builder.context,
@@ -72,20 +79,76 @@ public class ChuckerInterceptor private constructor(
         val transaction = HttpTransaction()
         val request = chain.request()
         val shouldProcessTheRequest = !skipPaths.any { it == request.url.encodedPath }
-        if (shouldProcessTheRequest) {
-            requestProcessor.process(request, transaction)
-        }
-        val response = try {
-            chain.proceed(request)
-        } catch (e: IOException) {
-            transaction.error = e.toString()
-            collector.onResponseReceived(transaction)
-            throw e
-        }
-        return if (shouldProcessTheRequest) {
-            responseProcessor.process(response, transaction)
+
+        // TODO clean this logic up and make sure that the mockEnabled builder flag impacts UI
+        if (mockEnabled) {
+            synchronized(this) {
+                val isMocked = RepositoryProvider.transaction().isUrlMocked(request.url.toString())
+                if (isMocked) {
+                    // Get mock transaction info from DB
+                    val mockTransaction = RepositoryProvider.transaction()
+                        .getMockedTransactionByUrl(request.url.toString())
+                    // Build mock response
+                    val mockResponse = Response.Builder()
+                        .code(200)
+                        .sentRequestAtMillis(System.currentTimeMillis())
+                        .receivedResponseAtMillis(System.currentTimeMillis())
+                        .protocol(Protocol.get(mockTransaction.protocol ?: ""))
+                        .message(mockTransaction.responseMessage ?: "")
+                        .request(
+                            Request.Builder()
+                                .url(mockTransaction.url?.toHttpUrl() ?: HttpUrl.Builder().build())
+                                .build()
+                        )
+                        .body(
+                            mockTransaction.mockResponseBody?.toResponseBody()
+                        ).build()
+
+                    transaction.wasEntryMocked = true
+
+                    // Contain usual operation with mock response
+                    if (shouldProcessTheRequest) {
+                        requestProcessor.process(request, transaction)
+                    }
+                    return if (shouldProcessTheRequest) {
+                        responseProcessor.process(mockResponse, transaction)
+                    } else {
+                        mockResponse
+                    }
+                } else {
+                    if (shouldProcessTheRequest) {
+                        requestProcessor.process(request, transaction)
+                    }
+                    val response = try {
+                        chain.proceed(request)
+                    } catch (e: IOException) {
+                        transaction.error = e.toString()
+                        collector.onResponseReceived(transaction)
+                        throw e
+                    }
+                    return if (shouldProcessTheRequest) {
+                        responseProcessor.process(response, transaction)
+                    } else {
+                        response
+                    }
+                }
+            }
         } else {
-            response
+            if (shouldProcessTheRequest) {
+                requestProcessor.process(request, transaction)
+            }
+            val response = try {
+                chain.proceed(request)
+            } catch (e: IOException) {
+                transaction.error = e.toString()
+                collector.onResponseReceived(transaction)
+                throw e
+            }
+            return if (shouldProcessTheRequest) {
+                responseProcessor.process(response, transaction)
+            } else {
+                response
+            }
         }
     }
 
@@ -104,6 +167,7 @@ public class ChuckerInterceptor private constructor(
         internal var decoders = emptyList<BodyDecoder>()
         internal var createShortcut = true
         internal var skipPaths = mutableSetOf<String>()
+        internal var mockEnabled = false
 
         /**
          * Sets the [ChuckerCollector] to customize data retention.
@@ -162,6 +226,14 @@ public class ChuckerInterceptor private constructor(
          */
         public fun createShortcut(enable: Boolean): Builder = apply {
             this.createShortcut = enable
+        }
+
+        /**
+         * If set to `true` [ChuckerInterceptor] will support mocking functionality. This will allow you to provide
+         * a mock response to get returned when the exact url is requested again based on the latest mocked response.
+         */
+        public fun enableMocking(): Builder = apply {
+            this.mockEnabled = true
         }
 
         /**

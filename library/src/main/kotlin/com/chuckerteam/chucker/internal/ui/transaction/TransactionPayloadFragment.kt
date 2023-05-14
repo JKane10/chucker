@@ -160,6 +160,22 @@ internal class TransactionPayloadFragment :
             }
         }
 
+        if (shouldShowWriteMockIcon()) {
+            menu.findItem(R.id.write_mock).apply {
+                isVisible = true
+                setOnMenuItemClickListener {
+                    transaction?.let {
+                        viewModel.writeMock(
+                            transaction,
+                            payloadAdapter.getMockBody(),
+                            payloadAdapter.isMocked()
+                        )
+                    }
+                    true
+                }
+            }
+        }
+
         if (payloadType == PayloadType.REQUEST) {
             viewModel.doesRequestBodyRequireEncoding.observe(
                 viewLifecycleOwner,
@@ -175,7 +191,13 @@ internal class TransactionPayloadFragment :
     private fun shouldShowSaveIcon(transaction: HttpTransaction?) = when {
         (payloadType == PayloadType.REQUEST) -> (0L != (transaction?.requestPayloadSize))
         (payloadType == PayloadType.RESPONSE) -> (0L != (transaction?.responsePayloadSize))
+        (payloadType == PayloadType.MOCK) -> false
         else -> true
+    }
+
+    private fun shouldShowWriteMockIcon() = when {
+        (payloadType == PayloadType.MOCK) -> true
+        else -> false
     }
 
     private fun shouldShowSearchIcon(transaction: HttpTransaction?) = when (payloadType) {
@@ -184,6 +206,9 @@ internal class TransactionPayloadFragment :
         }
         PayloadType.RESPONSE -> {
             (false == transaction?.isResponseBodyEncoded) && (0L != (transaction.responsePayloadSize))
+        }
+        PayloadType.MOCK -> {
+            false // TODO - determine this logic once impl is done.
         }
     }
 
@@ -257,6 +282,15 @@ internal class TransactionPayloadFragment :
                 return@withContext result
             }
 
+            if (type == PayloadType.MOCK) {
+                result.add(
+                    TransactionPayloadItem.MockItem(
+                        transaction.isResponseBodyMocked,
+                        transaction.wasEntryMocked
+                    )
+                )
+            }
+
             when {
                 isBodyEncoded -> {
                     val text = requireContext().getString(R.string.chucker_body_omitted)
@@ -266,16 +300,25 @@ internal class TransactionPayloadFragment :
                     val text = requireContext().getString(R.string.chucker_body_empty)
                     result.add(TransactionPayloadItem.BodyLineItem(SpannableStringBuilder.valueOf(text)))
                 }
-                else -> bodyString.lines().forEach {
-                    result.add(
-                        TransactionPayloadItem.BodyLineItem(
-                            if (it is SpannableStringBuilder) {
-                                it
-                            } else {
-                                SpannableStringBuilder.valueOf(it)
-                            }
+                else -> // TODO - clean this up...
+                    when (type) {
+                        PayloadType.MOCK -> {
+                            val mockBody = if (transaction.mockResponseBody.isNullOrBlank()) bodyString else transaction.mockResponseBody
+                            result.add(TransactionPayloadItem.MockBody(
+                                body = SpannableStringBuilder.valueOf(mockBody),
+                                wasEntryMocked = transaction.wasEntryMocked
+                            ))
+                        } else -> bodyString.lines().forEach {
+                        result.add(
+                            TransactionPayloadItem.BodyLineItem(
+                                if (it is SpannableStringBuilder) {
+                                    it
+                                } else {
+                                    SpannableStringBuilder.valueOf(it)
+                                }
+                            )
                         )
-                    )
+                    }
                 }
             }
             return@withContext result
@@ -295,6 +338,9 @@ internal class TransactionPayloadFragment :
                             PayloadType.RESPONSE -> {
                                 transaction.responseBody?.byteInputStream()?.copyTo(fos)
                                     ?: throw IOException(TRANSACTION_EXCEPTION)
+                            }
+                            PayloadType.MOCK -> {
+                                // no-op
                             }
                         }
                     }

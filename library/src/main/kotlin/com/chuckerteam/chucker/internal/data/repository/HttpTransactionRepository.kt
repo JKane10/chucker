@@ -28,4 +28,10 @@ internal interface HttpTransactionRepository {
     suspend fun getAllTransactions(): List<HttpTransaction>
 
     fun getTransactionsInTimeRange(minTimestamp: Long?): List<HttpTransaction>
+
+    fun getMockResponseBodyByUrl(url: String): String
+
+    fun getMockedTransactionByUrl(url: String): HttpTransaction
+
+    fun isUrlMocked(url: String): Boolean
 }

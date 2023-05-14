@@ -72,6 +72,7 @@ internal class TransactionAdapter internal constructor(
                 host.text = transaction.host
                 timeStart.text = DateFormat.getTimeInstance().format(transaction.requestDate)
 
+                setMockImage(transaction)
                 setProtocolImage(if (transaction.isSsl) ProtocolResources.Https() else ProtocolResources.Http())
 
                 if (transaction.status === HttpTransaction.Status.Complete) {
@@ -89,6 +90,25 @@ internal class TransactionAdapter internal constructor(
             }
 
             setStatusColor(transaction)
+        }
+
+        private fun setMockImage(transaction: HttpTransactionTuple) {
+            if (transaction.wasEntryMocked || transaction.isResponseBodyMocked) {
+                itemBinding.mocked.visibility = View.VISIBLE
+                if (transaction.isResponseBodyMocked) {
+                    ImageViewCompat.setImageTintList(
+                        itemBinding.mocked,
+                        ColorStateList.valueOf(ContextCompat.getColor(itemView.context, R.color.chucker_status_500))
+                    )
+                } else {
+                    ImageViewCompat.setImageTintList(
+                        itemBinding.mocked,
+                        ColorStateList.valueOf(ContextCompat.getColor(itemView.context, R.color.chucker_status_400))
+                    )
+                }
+            } else {
+                itemBinding.mocked.visibility = View.GONE
+            }
         }
 
         private fun setProtocolImage(resources: ProtocolResources) {

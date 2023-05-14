@@ -60,7 +60,11 @@ internal class HttpTransaction(
     @ColumnInfo(name = "isResponseBodyEncoded") var isResponseBodyEncoded: Boolean = false,
     @ColumnInfo(name = "responseImageData") var responseImageData: ByteArray?,
     @ColumnInfo(name = "graphQlDetected") var graphQlDetected: Boolean = false,
-    @ColumnInfo(name = "graphQlOperationName") var graphQlOperationName: String?
+    @ColumnInfo(name = "graphQlOperationName") var graphQlOperationName: String?,
+    @ColumnInfo(name = "mockDate") var mockDate: Long? = null,
+    @ColumnInfo(name = "wasEntryMocked") var wasEntryMocked: Boolean = false,
+    @ColumnInfo(name = "isResponseBodyMocked") var isResponseBodyMocked: Boolean = false,
+    @ColumnInfo(name = "mockResponseBody") var mockResponseBody: String? = null
 ) {
 
     @Ignore
@@ -333,6 +337,10 @@ internal class HttpTransaction(
             (isResponseBodyEncoded == other.isResponseBodyEncoded) &&
             (responseImageData?.contentEquals(other.responseImageData ?: byteArrayOf()) != false) &&
             (graphQlOperationName == other.graphQlOperationName) &&
-            (graphQlDetected == other.graphQlDetected)
+            (graphQlDetected == other.graphQlDetected) &&
+            (mockDate) == other.mockDate &&
+            (wasEntryMocked) == other.wasEntryMocked &&
+            (isResponseBodyMocked) == other.isResponseBodyMocked &&
+            (mockResponseBody) == other.mockResponseBody
     }
 }

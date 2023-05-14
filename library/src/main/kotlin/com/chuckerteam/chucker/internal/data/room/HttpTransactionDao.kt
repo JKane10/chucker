@@ -14,16 +14,18 @@ internal interface HttpTransactionDao {
 
     @Query(
         "SELECT id, requestDate, tookMs, protocol, method, host, path, scheme, responseCode, " +
-            "requestPayloadSize, responsePayloadSize, error, graphQLDetected, graphQlOperationName FROM " +
+            "requestPayloadSize, responsePayloadSize, error, graphQLDetected, " +
+            "graphQlOperationName, isResponseBodyMocked, wasEntryMocked, mockResponseBody FROM " +
             "transactions ORDER BY requestDate DESC"
     )
     fun getSortedTuples(): LiveData<List<HttpTransactionTuple>>
 
     @Query(
         "SELECT id, requestDate, tookMs, protocol, method, host, path, scheme, responseCode, " +
-            "requestPayloadSize, responsePayloadSize, error, graphQLDetected, graphQlOperationName FROM " +
-            "transactions WHERE responseCode LIKE :codeQuery AND (path LIKE :pathQuery OR " +
-            "graphQlOperationName LIKE :graphQlQuery) ORDER BY requestDate DESC"
+            "requestPayloadSize, responsePayloadSize, error, graphQLDetected, graphQlOperationName, " +
+            "isResponseBodyMocked, wasEntryMocked, mockResponseBody FROM transactions WHERE responseCode LIKE " +
+            ":codeQuery AND (path LIKE :pathQuery OR graphQlOperationName LIKE :graphQlQuery) ORDER " +
+            "BY requestDate DESC"
     )
     fun getFilteredTuples(
         codeQuery: String,
@@ -51,4 +53,13 @@ internal interface HttpTransactionDao {
 
     @Query("SELECT * FROM transactions WHERE requestDate >= :timestamp")
     fun getTransactionsInTimeRange(timestamp: Long): List<HttpTransaction>
+
+    @Query("SELECT mockResponseBody FROM transactions WHERE url = :url ORDER BY mockDate DESC")
+    fun getLatestMockResponseBody(url: String): List<String>
+
+    @Query("SELECT * FROM transactions WHERE url = :url ORDER BY mockDate DESC")
+    fun getLatestMockedTransaction(url: String): List<HttpTransaction>
+
+    @Query("SELECT isResponseBodyMocked FROM transactions WHERE url = :url")
+    fun isUrlMocked(url: String): List<Boolean>
 }

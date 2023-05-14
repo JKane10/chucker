@@ -43,4 +43,11 @@
         android:visible="false"
         app:showAsAction="ifRoom">
     </item>
+    <item
+        android:icon="@drawable/chucker_ic_mock"
+        android:title="@string/chucker_write_mock_response"
+        android:id="@+id/write_mock"
+        android:visible="false"
+        app:showAsAction="ifRoom">
+    </item>
 </menu>

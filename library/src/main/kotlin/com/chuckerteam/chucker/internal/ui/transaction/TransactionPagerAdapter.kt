@@ -12,13 +12,15 @@ internal class TransactionPagerAdapter(context: Context, fm: FragmentManager) :
     private val titles = arrayOf(
         context.getString(R.string.chucker_overview),
         context.getString(R.string.chucker_request),
-        context.getString(R.string.chucker_response)
+        context.getString(R.string.chucker_response),
+        context.getString(R.string.chucker_mock)
     )
 
     override fun getItem(position: Int): Fragment = when (position) {
         0 -> TransactionOverviewFragment()
         1 -> TransactionPayloadFragment.newInstance(PayloadType.REQUEST)
         2 -> TransactionPayloadFragment.newInstance(PayloadType.RESPONSE)
+        3 -> TransactionPayloadFragment.newInstance(PayloadType.MOCK)
         else -> throw IllegalArgumentException("no item")
     }
 

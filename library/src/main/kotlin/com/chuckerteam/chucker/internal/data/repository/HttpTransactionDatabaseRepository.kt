@@ -55,4 +55,16 @@ internal class HttpTransactionDatabaseRepository(private val database: ChuckerDa
         val timestamp = minTimestamp ?: 0L
         return transactionDao.getTransactionsInTimeRange(timestamp)
     }
+
+    override fun getMockResponseBodyByUrl(url: String): String {
+        return transactionDao.getLatestMockResponseBody(url).first()
+    }
+
+    override fun getMockedTransactionByUrl(url: String): HttpTransaction {
+        return transactionDao.getLatestMockedTransaction(url).first()
+    }
+
+    override fun isUrlMocked(url: String): Boolean {
+        return transactionDao.isUrlMocked(url).contains(true)
+    }
 }

@@ -163,6 +163,15 @@ object ProtoDecoder : BinaryDecoder {
 interceptorBuilder.addBodyDecoder(ProtoDecoder).build()
 ```
 
+### Mocking
+
+Mocking is a new feature being added to Chucker.
+1. Allow a user to modify a record already received and then return that mocked response upon future requests for that exact endpoint. [x]
+2. If a mock exists, return it prior to making the network request instead of just overriding the response each time. [x]
+3. Unify mocked status across entries per 4. []
+4. Create a proper mock table to simplify logic and reduce duplication bugs []
+5. Allow a user to create a mocked response from scratch. []
+
 ### Notification Permission 🔔
 
 **Warning** This feature is available in SNAPSHOT builds only at the moment
