@@ -16,6 +16,7 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import java.io.IOException
+import java.util.UUID
 
 /**
  * An OkHttp Interceptor which persists and displays HTTP activity
@@ -82,73 +83,80 @@ public class ChuckerInterceptor private constructor(
 
         // TODO clean this logic up and make sure that the mockEnabled builder flag impacts UI
         if (mockEnabled) {
-            synchronized(this) {
+            synchronized(UUID.randomUUID()) {
                 val isMocked = RepositoryProvider.transaction().isUrlMocked(request.url.toString())
                 if (isMocked) {
-                    // Get mock transaction info from DB
-                    val mockTransaction = RepositoryProvider.transaction()
-                        .getMockedTransactionByUrl(request.url.toString())
-                    // Build mock response
-                    val mockResponse = Response.Builder()
-                        .code(200)
-                        .sentRequestAtMillis(System.currentTimeMillis())
-                        .receivedResponseAtMillis(System.currentTimeMillis())
-                        .protocol(Protocol.get(mockTransaction.protocol ?: ""))
-                        .message(mockTransaction.responseMessage ?: "")
-                        .request(
-                            Request.Builder()
-                                .url(mockTransaction.url?.toHttpUrl() ?: HttpUrl.Builder().build())
-                                .build()
-                        )
-                        .body(
-                            mockTransaction.mockResponseBody?.toResponseBody()
-                        ).build()
-
-                    transaction.wasEntryMocked = true
-
-                    // Contain usual operation with mock response
-                    if (shouldProcessTheRequest) {
-                        requestProcessor.process(request, transaction)
-                    }
-                    return if (shouldProcessTheRequest) {
-                        responseProcessor.process(mockResponse, transaction)
-                    } else {
-                        mockResponse
-                    }
+                    return processMockRequest(shouldProcessTheRequest, request, transaction)
                 } else {
-                    if (shouldProcessTheRequest) {
-                        requestProcessor.process(request, transaction)
-                    }
-                    val response = try {
-                        chain.proceed(request)
-                    } catch (e: IOException) {
-                        transaction.error = e.toString()
-                        collector.onResponseReceived(transaction)
-                        throw e
-                    }
-                    return if (shouldProcessTheRequest) {
-                        responseProcessor.process(response, transaction)
-                    } else {
-                        response
-                    }
+                    return processRequest(shouldProcessTheRequest, request, transaction, chain)
                 }
             }
         } else {
-            if (shouldProcessTheRequest) {
-                requestProcessor.process(request, transaction)
-            }
-            val response = try {
-                chain.proceed(request)
-            } catch (e: IOException) {
-                transaction.error = e.toString()
-                collector.onResponseReceived(transaction)
-                throw e
-            }
-            return if (shouldProcessTheRequest) {
-                responseProcessor.process(response, transaction)
-            } else {
-                response
-            }
+            return processRequest(shouldProcessTheRequest, request, transaction, chain)
+        }
+    }
+
+    private fun processMockRequest(
+        shouldProcessTheRequest: Boolean,
+        request: Request,
+        transaction: HttpTransaction
+    ): Response {
+        // Get mock transaction info from DB
+        val mockTransaction = RepositoryProvider.transaction()
+            .getMockedTransactionByUrl(request.url.toString())
+        // Build mock response
+        val mockResponse = Response.Builder()
+            .code(200)
+            .sentRequestAtMillis(System.currentTimeMillis())
+            .receivedResponseAtMillis(System.currentTimeMillis())
+            .protocol(Protocol.get(mockTransaction.protocol ?: ""))
+            .message(mockTransaction.responseMessage ?: "")
+            .request(
+                Request.Builder()
+                    .url(mockTransaction.url?.toHttpUrl() ?: HttpUrl.Builder().build())
+                    .build()
+            )
+            .body(
+                mockTransaction.mockResponseBody?.toResponseBody()
+            ).build()
+
+        transaction.wasEntryMocked = true
+
+        // Contain usual operation with mock response
+        if (shouldProcessTheRequest) {
+            requestProcessor.process(request, transaction)
+        }
+        return if (shouldProcessTheRequest) {
+            responseProcessor.process(mockResponse, transaction)
+        } else {
+            mockResponse
+        }
+    }
+
+    private fun throwaway() {
+
+    }
+
+    private fun processRequest(
+        shouldProcessTheRequest: Boolean,
+        request: Request,
+        transaction: HttpTransaction,
+        chain: Interceptor.Chain
+    ): Response {
+        if (shouldProcessTheRequest) {
+            requestProcessor.process(request, transaction)
+        }
+        val response = try {
+            chain.proceed(request)
+        } catch (e: IOException) {
+            transaction.error = e.toString()
+            collector.onResponseReceived(transaction)
+            throw e
+        }
+        return if (shouldProcessTheRequest) {
+            responseProcessor.process(response, transaction)
+        } else {
+            response
         }
     }
 
