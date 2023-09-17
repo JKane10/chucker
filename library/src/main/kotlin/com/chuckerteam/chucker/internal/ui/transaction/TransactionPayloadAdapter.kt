@@ -8,6 +8,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.text.getSpans
+import androidx.core.widget.doAfterTextChanged
 import androidx.core.widget.doOnTextChanged
 import androidx.recyclerview.widget.RecyclerView
 import com.chuckerteam.chucker.R
@@ -211,7 +212,7 @@ internal sealed class TransactionPayloadViewHolder(view: View) : RecyclerView.Vi
             if (item is TransactionPayloadItem.MockBody) {
                 mockBodyBinding.mockToggle.isChecked = item.wasEntryMocked
                 mockBodyBinding.bodyLine.text = item.body
-                mockBodyBinding.bodyLine.doOnTextChanged { _, _, _, _ ->
+                mockBodyBinding.bodyLine.doAfterTextChanged {
                     // Prompts user to recheck to save changes
                     mockBodyBinding.mockToggle.isChecked = false
                 }
