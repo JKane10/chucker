@@ -3,10 +3,11 @@ package com.chuckerteam.chucker.internal.data.repository
 import androidx.lifecycle.LiveData
 import com.chuckerteam.chucker.internal.data.entity.HttpTransaction
 import com.chuckerteam.chucker.internal.data.entity.HttpTransactionTuple
-import com.chuckerteam.chucker.internal.data.room.ChuckerDatabase
+import com.chuckerteam.chucker.internal.data.entity.MockHttpTransaction
+import com.chuckerteam.chucker.internal.data.room.ChuckerMockDatabase
 import com.chuckerteam.chucker.internal.support.distinctUntilChanged
 
-internal class HttpTransactionDatabaseRepository(private val database: ChuckerDatabase) : HttpTransactionRepository {
+internal class MockHttpTransactionDatabaseRepository(private val database: ChuckerMockDatabase) : MockHttpTransactionRepository {
 
     private val transactionDao get() = database.transactionDao()
 
@@ -54,5 +55,9 @@ internal class HttpTransactionDatabaseRepository(private val database: ChuckerDa
     override fun getTransactionsInTimeRange(minTimestamp: Long?): List<HttpTransaction> {
         val timestamp = minTimestamp ?: 0L
         return transactionDao.getTransactionsInTimeRange(timestamp)
+    }
+
+    override fun getMockedTransactionByUrl(url: String): HttpTransaction? {
+        return transactionDao.getTransactionByUrl(url).firstOrNull()
     }
 }

@@ -28,7 +28,7 @@ import java.util.Date
  */
 @Suppress("LongParameterList")
 @Entity(tableName = "transactions")
-internal class HttpTransaction(
+internal class MockHttpTransaction(
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "id")
     var id: Long = 0,
@@ -61,8 +61,6 @@ internal class HttpTransaction(
     @ColumnInfo(name = "responseImageData") var responseImageData: ByteArray?,
     @ColumnInfo(name = "graphQlDetected") var graphQlDetected: Boolean = false,
     @ColumnInfo(name = "graphQlOperationName") var graphQlOperationName: String?,
-    @ColumnInfo(name = "wasResponseMocked") var wasResponseMocked: Boolean = false,
-    @ColumnInfo(name = "shouldUseMock") var shouldUseMock: Boolean = false
 ) {
 
     @Ignore
@@ -264,7 +262,7 @@ internal class HttpTransaction(
         } ?: SpannableStringBuilder.valueOf("")
     }
 
-    fun populateUrl(httpUrl: HttpUrl): HttpTransaction {
+    fun populateUrl(httpUrl: HttpUrl): MockHttpTransaction {
         val formattedUrl = FormattedUrl.fromHttpUrl(httpUrl, encoded = false)
         url = formattedUrl.url
         host = formattedUrl.host
@@ -302,7 +300,7 @@ internal class HttpTransaction(
     // Not relying on 'equals' because comparison be long due to request and response sizes
     // and it would be unwise to do this every time 'equals' is called.
     @Suppress("ComplexMethod")
-    fun hasTheSameContent(other: HttpTransaction?): Boolean {
+    fun hasTheSameContent(other: MockHttpTransaction?): Boolean {
         if (this === other) return true
         if (other == null) return false
 
@@ -335,7 +333,6 @@ internal class HttpTransaction(
             (isResponseBodyEncoded == other.isResponseBodyEncoded) &&
             (responseImageData?.contentEquals(other.responseImageData ?: byteArrayOf()) != false) &&
             (graphQlOperationName == other.graphQlOperationName) &&
-            (graphQlDetected == other.graphQlDetected) &&
-            (wasResponseMocked == other.wasResponseMocked)
+            (graphQlDetected == other.graphQlDetected)
     }
 }

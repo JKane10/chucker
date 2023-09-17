@@ -9,7 +9,7 @@ import com.chuckerteam.chucker.internal.data.entity.HttpTransactionTuple
  * with [HttpTransaction] and [HttpTransactionTuple]. Please use [HttpTransactionDatabaseRepository] that
  * uses Room and SqLite to run those operations.
  */
-internal interface HttpTransactionRepository {
+internal interface MockHttpTransactionRepository {
 
     suspend fun insertTransaction(transaction: HttpTransaction)
 
@@ -28,4 +28,6 @@ internal interface HttpTransactionRepository {
     suspend fun getAllTransactions(): List<HttpTransaction>
 
     fun getTransactionsInTimeRange(minTimestamp: Long?): List<HttpTransaction>
+
+    fun getMockedTransactionByUrl(url: String): HttpTransaction?
 }

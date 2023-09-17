@@ -93,19 +93,17 @@ internal class TransactionAdapter internal constructor(
         }
 
         private fun setMockImage(transaction: HttpTransactionTuple) {
-            if (transaction.wasEntryMocked || transaction.isResponseBodyMocked) {
+            if (transaction.wasResponseMocked) {
                 itemBinding.mocked.visibility = View.VISIBLE
-                if (transaction.isResponseBodyMocked) {
-                    ImageViewCompat.setImageTintList(
-                        itemBinding.mocked,
-                        ColorStateList.valueOf(ContextCompat.getColor(itemView.context, R.color.chucker_status_500))
+                ImageViewCompat.setImageTintList(
+                    itemBinding.mocked,
+                    ColorStateList.valueOf(
+                        ContextCompat.getColor(
+                            itemView.context,
+                            R.color.chucker_status_500
+                        )
                     )
-                } else {
-                    ImageViewCompat.setImageTintList(
-                        itemBinding.mocked,
-                        ColorStateList.valueOf(ContextCompat.getColor(itemView.context, R.color.chucker_status_400))
-                    )
-                }
+                )
             } else {
                 itemBinding.mocked.visibility = View.GONE
             }
@@ -148,7 +146,8 @@ private fun ChuckerListItemTransactionBinding.displayGraphQlFields(
         graphqlIcon.visibility = View.VISIBLE
         graphqlPath.visibility = View.VISIBLE
 
-        graphqlPath.text = graphQlOperationName ?: root.resources.getString(R.string.chucker_graphql_operation_is_empty)
+        graphqlPath.text = graphQlOperationName
+            ?: root.resources.getString(R.string.chucker_graphql_operation_is_empty)
     } else {
         graphqlIcon.visibility = View.GONE
         graphqlPath.visibility = View.GONE

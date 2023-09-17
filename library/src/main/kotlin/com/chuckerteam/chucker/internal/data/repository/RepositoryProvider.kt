@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.annotation.VisibleForTesting
 import com.chuckerteam.chucker.internal.data.repository.RepositoryProvider.initialize
 import com.chuckerteam.chucker.internal.data.room.ChuckerDatabase
+import com.chuckerteam.chucker.internal.data.room.ChuckerMockDatabase
 
 /**
  * A singleton to hold the [HttpTransactionRepository] instance.
@@ -12,10 +13,17 @@ import com.chuckerteam.chucker.internal.data.room.ChuckerDatabase
 internal object RepositoryProvider {
 
     private var transactionRepository: HttpTransactionRepository? = null
+    private var mockRepository: MockHttpTransactionDatabaseRepository? = null
 
     fun transaction(): HttpTransactionRepository {
         return checkNotNull(transactionRepository) {
             "You can't access the transaction repository if you don't initialize it!"
+        }
+    }
+
+    fun mockTransaction(): MockHttpTransactionDatabaseRepository {
+        return checkNotNull(mockRepository) {
+            "You can't access the mock repository if you don't initialize it!"
         }
     }
 
@@ -29,11 +37,19 @@ internal object RepositoryProvider {
         }
     }
 
+    fun initializeMock(applicationContext: Context) {
+        if (mockRepository == null) {
+            val mockDb = ChuckerMockDatabase.create(applicationContext)
+            mockRepository = MockHttpTransactionDatabaseRepository(mockDb)
+        }
+    }
+
     /**
      * Cleanup stored singleton objects
      */
     @VisibleForTesting
     fun close() {
         transactionRepository = null
+        mockRepository = null
     }
 }

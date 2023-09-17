@@ -39,6 +39,7 @@ public class ChuckerCollector @JvmOverloads constructor(
 
     init {
         RepositoryProvider.initialize(context)
+        RepositoryProvider.initializeMock(context)
     }
 
     /**

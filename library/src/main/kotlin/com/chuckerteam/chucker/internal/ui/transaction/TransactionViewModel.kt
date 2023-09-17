@@ -9,7 +9,10 @@ import androidx.lifecycle.viewModelScope
 import com.chuckerteam.chucker.internal.data.entity.HttpTransaction
 import com.chuckerteam.chucker.internal.data.repository.RepositoryProvider
 import com.chuckerteam.chucker.internal.support.combineLatest
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import java.lang.IllegalStateException
 
 internal class TransactionViewModel(transactionId: Long) : ViewModel() {
 
@@ -55,14 +58,28 @@ internal class TransactionViewModel(transactionId: Long) : ViewModel() {
     /**
      * Writes mock response body and other meta info to the database.
      */
-    fun writeMock(transaction: HttpTransaction, mockedBody: String, isMocked: Boolean) {
-        viewModelScope.launch {
-            if (isMocked) {
-                transaction.mockDate = System.currentTimeMillis()
-                transaction.mockResponseBody = mockedBody
-                transaction.isResponseBodyMocked = true
+    fun writeMock(transaction: HttpTransaction, mockedBody: String, shouldUseMock: Boolean) {
+        try {
+            viewModelScope.launch(Dispatchers.IO) {
+                val mock = getMock(transaction)
+                if (mock == null) {
+                    transaction.responseBody = mockedBody
+                    transaction.shouldUseMock = shouldUseMock
+                    RepositoryProvider.mockTransaction().insertTransaction(transaction)
+                } else {
+                    mock.responseBody = mockedBody
+                    mock.shouldUseMock = shouldUseMock
+                    RepositoryProvider.mockTransaction().updateTransaction(mock)
+                }
             }
-            RepositoryProvider.transaction().updateTransaction(transaction)
+        } catch (e: IllegalStateException) {
+            // mocking not enabled
+        }
+    }
+
+    suspend fun getMock(transaction: HttpTransaction): HttpTransaction? = coroutineScope {
+        transaction.url?.let {
+            RepositoryProvider.mockTransaction().getMockedTransactionByUrl(it)
         }
     }
 }

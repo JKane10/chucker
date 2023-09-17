@@ -15,10 +15,12 @@ import com.chuckerteam.chucker.databinding.ChuckerTransactionItemBodyLineBinding
 import com.chuckerteam.chucker.databinding.ChuckerTransactionItemHeadersBinding
 import com.chuckerteam.chucker.databinding.ChuckerTransactionItemImageBinding
 import com.chuckerteam.chucker.databinding.ChuckerTransactionItemMockBodyItemBinding
-import com.chuckerteam.chucker.databinding.ChuckerTransactionItemMockToggleBinding
 import com.chuckerteam.chucker.internal.support.ChessboardDrawable
 import com.chuckerteam.chucker.internal.support.SpanTextUtil
 import com.chuckerteam.chucker.internal.support.highlightWithDefinedColors
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 /**
  * Adapter responsible of showing the content of the Transaction Request/Response body.
@@ -26,7 +28,9 @@ import com.chuckerteam.chucker.internal.support.highlightWithDefinedColors
  * performances when loading big payloads.
  */
 // TODO - evaluate large responses in edit text on how performance is impacted as mentioned above
-internal class TransactionBodyAdapter : RecyclerView.Adapter<TransactionPayloadViewHolder>() {
+internal class TransactionBodyAdapter(
+    val updateMock: suspend (shouldUseMock: Boolean, mockBody: String) -> Unit
+) : RecyclerView.Adapter<TransactionPayloadViewHolder>() {
 
     private val items = arrayListOf<TransactionPayloadItem>()
 
@@ -60,16 +64,10 @@ internal class TransactionBodyAdapter : RecyclerView.Adapter<TransactionPayloadV
                 TransactionPayloadViewHolder.BodyLineViewHolder(bodyItemBinding)
             }
 
-            TYPE_MOCK_TOGGLE -> {
-                val mockToggleBinding =
-                    ChuckerTransactionItemMockToggleBinding.inflate(inflater, parent, false)
-                TransactionPayloadViewHolder.MockToggleViewHolder(mockToggleBinding)
-            }
-
             TYPE_MOCK_BODY -> {
                 val mockBodyBinding =
                     ChuckerTransactionItemMockBodyItemBinding.inflate(inflater, parent, false)
-                TransactionPayloadViewHolder.MockBodyViewHolder(mockBodyBinding)
+                TransactionPayloadViewHolder.MockBodyViewHolder(mockBodyBinding, updateMock)
             }
 
             else -> {
@@ -80,14 +78,6 @@ internal class TransactionBodyAdapter : RecyclerView.Adapter<TransactionPayloadV
         }
     }
 
-    fun getMockBody(): String {
-        return items.filterIsInstance<TransactionPayloadItem.MockBody>().first().text
-    }
-
-    fun isMocked(): Boolean {
-        return items.filterIsInstance<TransactionPayloadItem.MockItem>().first().isMocked
-    }
-
     override fun getItemCount() = items.size
 
     override fun getItemViewType(position: Int): Int {
@@ -95,7 +85,6 @@ internal class TransactionBodyAdapter : RecyclerView.Adapter<TransactionPayloadV
             is TransactionPayloadItem.HeaderItem -> TYPE_HEADERS
             is TransactionPayloadItem.BodyLineItem -> TYPE_BODY_LINE
             is TransactionPayloadItem.ImageItem -> TYPE_IMAGE
-            is TransactionPayloadItem.MockItem -> TYPE_MOCK_TOGGLE
             is TransactionPayloadItem.MockBody -> TYPE_MOCK_BODY
         }
     }
@@ -214,35 +203,29 @@ internal sealed class TransactionPayloadViewHolder(view: View) : RecyclerView.Vi
         }
     }
 
-    internal class MockToggleViewHolder(
-        private val mockToggleBinding: ChuckerTransactionItemMockToggleBinding
-    ) : TransactionPayloadViewHolder(mockToggleBinding.root) {
-        override fun bind(item: TransactionPayloadItem) {
-            if (item is TransactionPayloadItem.MockItem && !item.wasEntryMocked) {
-                mockToggleBinding.root.isChecked = item.isMocked
-                mockToggleBinding.root.setOnCheckedChangeListener { _, isChecked ->
-                    item.isMocked = isChecked
-                }
-            } else mockToggleBinding.root.visibility = View.GONE
-
-        }
-    }
-
     internal class MockBodyViewHolder(
-        private val mockBodyBinding: ChuckerTransactionItemMockBodyItemBinding
+        private val mockBodyBinding: ChuckerTransactionItemMockBodyItemBinding,
+        private val updateMock: suspend (shouldUseMock: Boolean, mockBody: String) -> Unit
     ) : TransactionPayloadViewHolder(mockBodyBinding.root) {
         override fun bind(item: TransactionPayloadItem) {
-            if (item is TransactionPayloadItem.MockBody && !item.wasEntryMocked) {
+            if (item is TransactionPayloadItem.MockBody) {
+                mockBodyBinding.mockToggle.isChecked = item.wasEntryMocked
                 mockBodyBinding.bodyLine.text = item.body
-                mockBodyBinding.bodyLine.doOnTextChanged { text, _, _, _ ->
-                    item.text = text.toString()
+                mockBodyBinding.bodyLine.doOnTextChanged { _, _, _, _ ->
+                    // Prompts user to recheck to save changes
+                    mockBodyBinding.mockToggle.isChecked = false
+                }
+                mockBodyBinding.mockToggle.setOnCheckedChangeListener { _, isChecked ->
+                    CoroutineScope(Dispatchers.IO).launch {
+                        updateMock(isChecked, mockBodyBinding.bodyLine.text.toString())
+                    }
                 }
             } else {
-                // TODO - implement cleaner solution
                 mockBodyBinding.bodyLine.setText(
                     mockBodyBinding.root.context.getString(R.string.chucker_this_entry_was_mocked)
                 )
                 mockBodyBinding.bodyLine.isEnabled = false
+                mockBodyBinding.mockToggle.visibility = View.GONE
             }
         }
     }
@@ -252,6 +235,8 @@ internal sealed class TransactionPayloadItem {
     internal class HeaderItem(val headers: Spanned) : TransactionPayloadItem()
     internal class BodyLineItem(var line: SpannableStringBuilder) : TransactionPayloadItem()
     internal class ImageItem(val image: Bitmap, val luminance: Double?) : TransactionPayloadItem()
-    internal class MockItem(var isMocked: Boolean, var wasEntryMocked: Boolean) : TransactionPayloadItem()
-    internal class MockBody(var body: SpannableStringBuilder, var text: String = "", var wasEntryMocked: Boolean) : TransactionPayloadItem()
+    internal class MockBody(
+        var body: SpannableStringBuilder,
+        var wasEntryMocked: Boolean
+    ) : TransactionPayloadItem()
 }

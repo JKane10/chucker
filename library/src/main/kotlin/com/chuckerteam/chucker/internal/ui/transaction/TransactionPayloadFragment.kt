@@ -65,7 +65,11 @@ internal class TransactionPayloadFragment :
         }
 
     private lateinit var payloadBinding: ChuckerFragmentTransactionPayloadBinding
-    private val payloadAdapter = TransactionBodyAdapter()
+    private val payloadAdapter = TransactionBodyAdapter { shouldUseMock: Boolean, mockBody: String ->
+        viewModel.transaction.value?.let {
+            viewModel.writeMock(it, mockBody, shouldUseMock)
+        }
+    }
 
     private var backgroundSpanColor: Int = Color.YELLOW
     private var foregroundSpanColor: Int = Color.RED
@@ -155,22 +159,6 @@ internal class TransactionPayloadFragment :
                 isVisible = true
                 setOnMenuItemClickListener {
                     createFileToSaveBody()
-                    true
-                }
-            }
-        }
-
-        if (shouldShowWriteMockIcon()) {
-            menu.findItem(R.id.write_mock).apply {
-                isVisible = true
-                setOnMenuItemClickListener {
-                    transaction?.let {
-                        viewModel.writeMock(
-                            transaction,
-                            payloadAdapter.getMockBody(),
-                            payloadAdapter.isMocked()
-                        )
-                    }
                     true
                 }
             }
@@ -283,10 +271,13 @@ internal class TransactionPayloadFragment :
             }
 
             if (type == PayloadType.MOCK) {
+                val mock = viewModel.getMock(transaction)
                 result.add(
-                    TransactionPayloadItem.MockItem(
-                        transaction.isResponseBodyMocked,
-                        transaction.wasEntryMocked
+                    TransactionPayloadItem.MockBody(
+                        body = SpannableStringBuilder.valueOf(
+                            mock?.responseBody ?: bodyString
+                        ),
+                        wasEntryMocked =  mock?.shouldUseMock ?: false
                     )
                 )
             }
@@ -300,25 +291,16 @@ internal class TransactionPayloadFragment :
                     val text = requireContext().getString(R.string.chucker_body_empty)
                     result.add(TransactionPayloadItem.BodyLineItem(SpannableStringBuilder.valueOf(text)))
                 }
-                else -> // TODO - clean this up...
-                    when (type) {
-                        PayloadType.MOCK -> {
-                            val mockBody = if (transaction.mockResponseBody.isNullOrBlank()) bodyString else transaction.mockResponseBody
-                            result.add(TransactionPayloadItem.MockBody(
-                                body = SpannableStringBuilder.valueOf(mockBody),
-                                wasEntryMocked = transaction.wasEntryMocked
-                            ))
-                        } else -> bodyString.lines().forEach {
-                        result.add(
-                            TransactionPayloadItem.BodyLineItem(
-                                if (it is SpannableStringBuilder) {
-                                    it
-                                } else {
-                                    SpannableStringBuilder.valueOf(it)
-                                }
-                            )
+                else -> if (type != PayloadType.MOCK) bodyString.lines().forEach {
+                    result.add(
+                        TransactionPayloadItem.BodyLineItem(
+                            if (it is SpannableStringBuilder) {
+                                it
+                            } else {
+                                SpannableStringBuilder.valueOf(it)
+                            }
                         )
-                    }
+                    )
                 }
             }
             return@withContext result

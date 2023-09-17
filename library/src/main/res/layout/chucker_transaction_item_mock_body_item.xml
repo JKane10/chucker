@@ -1,12 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<EditText xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/bodyLine"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:textIsSelectable="true"
-    android:hint="@string/chucker_mock"
-    android:textDirection="ltr"
-    android:gravity="start"
-    android:layout_marginHorizontal="@dimen/chucker_doub_grid"
-    android:typeface="monospace"
-    android:inputType="textMultiLine" />
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/chucker_doub_grid"
+        android:text="@string/chucker_mock_description" />
+
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/mock_toggle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/chucker_doub_grid"
+        android:text="@string/chucker_mocked" />
+
+    <EditText
+        android:id="@+id/bodyLine"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/chucker_doub_grid"
+        android:gravity="start"
+        android:hint="@string/chucker_mock"
+        android:inputType="textMultiLine"
+        android:textDirection="ltr"
+        android:textIsSelectable="true"
+        android:typeface="monospace" />
+</LinearLayout>

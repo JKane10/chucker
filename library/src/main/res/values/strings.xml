@@ -15,6 +15,7 @@
     <string name="chucker_ssl">SSL</string>
     <string name="chucker_mock">Mock</string>
     <string name="chucker_mocked">Mocked</string>
+    <string name="chucker_mock_description">The toggle below controls whether or not the mock response will be used for outgoing requests with the exact same url. It is also responsible for saving or updating the mock, so editing the text will require you to re-toggle this switch.\n\nEnsure you\'ve enabled mocking via the interceptor builder.</string>
     <string name="chucker_write_mock_response">Write mock response to disk</string>
     <string name="chucker_tls_version">TLS version</string>
     <string name="chucker_tls_cipher_suite">Cipher Suite</string>
