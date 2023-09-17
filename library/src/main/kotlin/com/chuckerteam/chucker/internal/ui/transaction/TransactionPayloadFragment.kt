@@ -230,9 +230,7 @@ internal class TransactionPayloadFragment :
         PayloadType.RESPONSE -> {
             (false == transaction?.isResponseBodyEncoded) && (0L != (transaction.responsePayloadSize))
         }
-        PayloadType.MOCK -> {
-            false
-        }
+        PayloadType.MOCK -> false
     }
 
     override fun onAttach(context: Context) {

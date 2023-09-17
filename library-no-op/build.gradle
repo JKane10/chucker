@@ -10,12 +10,12 @@ android {
             '-module-name', "com.github.ChuckerTeam.Chucker.library-no-op",
             "-Xexplicit-api=strict"
         ]
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
     }
 
     kotlin {
-        jvmToolchain(17)
+        jvmToolchain(11)
     }
 
     buildFeatures {
@@ -26,17 +26,20 @@ android {
         minSdk rootProject.minSdkVersion
     }
 
+    lintOptions {
+        warningsAsErrors true
+        abortOnError true
+        // We don't want to impose RTL on consuming applications.
+        disable 'RtlEnabled'
+        // Don't fail build if some dependencies outdated
+        disable 'GradleDependency'
+    }
 
     publishing {
         singleVariant('release') {
             withSourcesJar()
             withJavadocJar()
         }
-    }
-    lint {
-        abortOnError true
-        disable 'RtlEnabled', 'GradleDependency'
-        warningsAsErrors true
     }
 }
 

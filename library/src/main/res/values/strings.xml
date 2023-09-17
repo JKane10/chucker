@@ -17,6 +17,7 @@
     <string name="chucker_mocked">Mocked</string>
     <string name="chucker_mock_description">The toggle below controls whether or not the mock response will be used for outgoing requests with the exact same url. It is also responsible for saving or updating the mock, so editing the text will require you to re-toggle this switch.\n\nEnsure you\'ve enabled mocking via the interceptor builder.</string>
     <string name="chucker_write_mock_response">Write mock response to disk</string>
+    <string name="chucker_this_entry_was_mocked">This entry was mocked</string>
     <string name="chucker_tls_version">TLS version</string>
     <string name="chucker_tls_cipher_suite">Cipher Suite</string>
     <string name="chucker_request_time">Request time</string>
@@ -68,5 +69,4 @@
     <string name="chucker_graphql_operation_is_empty"> &lt;Unable to discover GraphQL operation name&gt;</string>
     <string name="chucker_scroll_buttons_for_search">Buttons to scroll the search items</string>
     <string name="chucker_search_results_title">Search Results:</string>
-    <string name="chucker_this_entry_was_mocked">This entry was mocked</string>
 </resources>

@@ -80,7 +80,6 @@ public class ChuckerInterceptor private constructor(
         val request = chain.request()
         val shouldProcessTheRequest = !skipPaths.any { it == request.url.encodedPath }
 
-        // TODO clean this logic up and make sure that the mockEnabled builder flag impacts UI
         return if (mockingEnabled) {
             val mockedTransaction = RepositoryProvider.mockTransaction().getMockedTransactionByUrl(request.url.toString())
             if (mockedTransaction != null && mockedTransaction.shouldUseMock) {
@@ -125,10 +124,6 @@ public class ChuckerInterceptor private constructor(
         } else {
             mockResponse
         }
-    }
-
-    private fun throwaway() {
-
     }
 
     private fun processRequest(

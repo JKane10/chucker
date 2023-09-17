@@ -46,19 +46,21 @@ android {
         }
     }
 
+    lintOptions {
+        warningsAsErrors true
+        abortOnError true
+        disable 'AcceptsUserCertificates'
+        // Don't fail build if some dependencies outdated
+        disable 'GradleDependency'
+    }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
     }
 
     kotlin {
-        jvmToolchain(17)
-    }
-    lint {
-        abortOnError true
-        disable 'AcceptsUserCertificates', 'GradleDependency'
-        warningsAsErrors true
+        jvmToolchain(11)
     }
 }
 
