@@ -41,6 +41,7 @@ internal class MainViewModel : ViewModel() {
     fun clearTransactions() {
         viewModelScope.launch {
             RepositoryProvider.transaction().deleteAllTransactions()
+            RepositoryProvider.mockTransaction().deleteAllTransactions()
         }
         NotificationHelper.clearBuffer()
     }
