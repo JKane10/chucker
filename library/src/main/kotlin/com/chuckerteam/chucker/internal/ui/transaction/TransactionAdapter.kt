@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
 import androidx.core.widget.ImageViewCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -142,14 +143,10 @@ private fun ChuckerListItemTransactionBinding.displayGraphQlFields(
     graphQlOperationName: String?,
     graphQLDetected: Boolean
 ) {
-    if (graphQLDetected) {
-        graphqlIcon.visibility = View.VISIBLE
-        graphqlPath.visibility = View.VISIBLE
+    graphqlIcon.isVisible = graphQLDetected
+    graphqlPath.isVisible = graphQLDetected
 
-        graphqlPath.text = graphQlOperationName
-            ?: root.resources.getString(R.string.chucker_graphql_operation_is_empty)
-    } else {
-        graphqlIcon.visibility = View.GONE
-        graphqlPath.visibility = View.GONE
+    if (graphQLDetected) {
+        graphqlPath.text = graphQlOperationName ?: root.resources.getString(R.string.chucker_graphql_operation_is_empty)
     }
 }

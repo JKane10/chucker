@@ -6,9 +6,19 @@ Please add your entries according to this format.
 ## Unreleased
 
 ### Added
+
+### Fixed
+
+### Removed
+
+### Changed
+
+## Version 4.0.0 *(2023-06-29)*
+
+### Added
 * Add `skipPaths` to selectively skip requests from Chucker [#970]
 * Add syntax highlighting to the request/response body when is JSON [#930]
-* Decoding of request and response bodies can now be customized. In order to do this a `BodyDecoder` interface needs to be implemented and installed in the `ChuckerInterceptor` via `ChuckerInterceptor.addBinaryDecoder(decoder)` method. Decoded bodies are then displayed in the Chucker UI. [#555]
+* Decoding of request and response bodies can now be customized. In order to do this a `BinaryDecoder` interface needs to be implemented and installed in the `ChuckerInterceptor` via `ChuckerInterceptor.addBinaryDecoder(decoder)` method. Decoded bodies are then displayed in the Chucker UI. [#555]
 * Create dynamic shortcut when `ChuckerInterceptor` added. Users can opt out of this feature using `createShortcut(false)` in `ChuckerInterceptor.Builder` [#588]
 * Brotli compression support [#563]
 * Added `writeTransactions` method to `ChuckerCollector` to export transactions to a file programmatically [#784]
@@ -19,6 +29,7 @@ Please add your entries according to this format.
   * Add support for GraphQL [#805] [#884]
   * Show GraphQL OperationName header to transaction title [#69], [#116]
   * Allows to filter transactions based on graphqlOperationName [#920]
+* Added scroll to highlighted text search in response screen [#988]
 
 ### Fixed
 
@@ -30,6 +41,7 @@ Please add your entries according to this format.
 * Fixed RTL issue in payload view [#733]
 * Fixed StrictMode ThreadPolicy violations [#737]
 * Fixed Memory Leak with Toasts: Use applicationContext instead of Activity [#810]
+* Improved error message when trying to save empty bodies [#1038]
 
 ### Removed
 
@@ -38,10 +50,10 @@ Please add your entries according to this format.
 
 ### Changed
 
-* Updated OkHttp to 4.9.3
+* Updated OkHttp to 4.11.0
 * Updated Material to 1.8.0
-* Updated AGP to 8.0.0
-* Updated Kotlin to 1.8.20
+* Updated AGP to 8.0.2
+* Updated Kotlin to 1.8.22
 
 ## Version 3.5.2 *(2021-07-28)*
 
@@ -527,6 +539,7 @@ Initial release.
 [#321]: https://github.com/ChuckerTeam/chucker/issues/321
 [#366]: https://github.com/ChuckerTeam/chucker/issues/366
 [#367]: https://github.com/ChuckerTeam/chucker/issues/367
+[#388]: https://github.com/ChuckerTeam/chucker/issues/388
 [#394]: https://github.com/ChuckerTeam/chucker/issues/394
 [#410]: https://github.com/ChuckerTeam/chucker/issues/410
 [#422]: https://github.com/ChuckerTeam/chucker/issues/422
@@ -557,3 +570,5 @@ Initial release.
 [#930]: https://github.com/ChuckerTeam/chucker/pull/930
 [#970]: https://github.com/ChuckerTeam/chucker/pull/970
 [#975]: https://github.com/ChuckerTeam/chucker/pull/975
+[#988]: https://github.com/ChuckerTeam/chucker/pull/988
+[#1038]: https://github.com/ChuckerTeam/chucker/pull/1038

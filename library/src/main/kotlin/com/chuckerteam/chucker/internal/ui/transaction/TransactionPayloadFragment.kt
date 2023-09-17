@@ -1,6 +1,9 @@
+@file:Suppress("TooManyFunctions")
+
 package com.chuckerteam.chucker.internal.ui.transaction
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
 import android.graphics.Color
 import android.net.Uri
@@ -11,15 +14,19 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.SearchView
 import androidx.core.content.ContextCompat
 import androidx.core.text.HtmlCompat
+import androidx.core.text.bold
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.withResumed
 import com.chuckerteam.chucker.R
 import com.chuckerteam.chucker.databinding.ChuckerFragmentTransactionPayloadBinding
 import com.chuckerteam.chucker.internal.data.entity.HttpTransaction
@@ -27,10 +34,12 @@ import com.chuckerteam.chucker.internal.support.Logger
 import com.chuckerteam.chucker.internal.support.calculateLuminance
 import com.chuckerteam.chucker.internal.support.combineLatest
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.FileOutputStream
 import java.io.IOException
+import kotlin.math.abs
 
 internal class TransactionPayloadFragment :
     Fragment(), SearchView.OnQueryTextListener {
@@ -73,6 +82,11 @@ internal class TransactionPayloadFragment :
 
     private var backgroundSpanColor: Int = Color.YELLOW
     private var foregroundSpanColor: Int = Color.RED
+    private var backgroundSpanColorSearchItem: Int = Color.GREEN
+
+    private val scrollableIndices = arrayListOf<TransactionBodyAdapter.SearchItemBodyLine>()
+    private var currentSearchScrollIndex = -1
+    private var currentSearchQuery: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -121,6 +135,32 @@ internal class TransactionPayloadFragment :
                 }
             }
         )
+        payloadBinding.searchNavButton.setOnClickListener {
+            onSearchScrollerButtonClick(true)
+        }
+        payloadBinding.searchNavButtonUp.setOnClickListener {
+            onSearchScrollerButtonClick(false)
+        }
+    }
+
+    private fun onSearchScrollerButtonClick(goNext: Boolean) {
+        // hide the keyboard if visible
+        val inputMethodManager = activity?.getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
+        if (inputMethodManager.isAcceptingText) {
+            activity?.currentFocus?.clearFocus()
+            inputMethodManager.hideSoftInputFromWindow(view?.windowToken, 0)
+        }
+
+        if (scrollableIndices.isNotEmpty()) {
+            val scrollToIndex =
+                if (goNext) {
+                    ((currentSearchScrollIndex + 1) % scrollableIndices.size)
+                } else {
+                    (abs(currentSearchScrollIndex - 1 + scrollableIndices.size) % scrollableIndices.size)
+                }
+
+            scrollToSearchedItemPosition(scrollToIndex)
+        }
     }
 
     private fun showEmptyState() {
@@ -183,20 +223,12 @@ internal class TransactionPayloadFragment :
         else -> true
     }
 
-    private fun shouldShowWriteMockIcon() = when {
-        (payloadType == PayloadType.MOCK) -> true
-        else -> false
-    }
-
     private fun shouldShowSearchIcon(transaction: HttpTransaction?) = when (payloadType) {
         PayloadType.REQUEST -> {
             (false == transaction?.isRequestBodyEncoded) && (0L != (transaction.requestPayloadSize))
         }
         PayloadType.RESPONSE -> {
             (false == transaction?.isResponseBodyEncoded) && (0L != (transaction.responsePayloadSize))
-        }
-        PayloadType.MOCK -> {
-            false // TODO - determine this logic once impl is done.
         }
     }
 
@@ -207,22 +239,96 @@ internal class TransactionPayloadFragment :
     }
 
     private fun createFileToSaveBody() {
-        saveToFile.launch("$DEFAULT_FILE_PREFIX${System.currentTimeMillis()}")
+        val transaction = viewModel.transaction.value
+        if (transaction != null && isBodyEmpty(payloadType, transaction)) {
+            Toast.makeText(
+                activity,
+                R.string.chucker_file_not_saved_body_is_empty,
+                Toast.LENGTH_SHORT
+            ).show()
+        } else {
+            saveToFile.launch("$DEFAULT_FILE_PREFIX${System.currentTimeMillis()}")
+        }
     }
 
     override fun onQueryTextSubmit(query: String): Boolean = false
 
     override fun onQueryTextChange(newText: String): Boolean {
+        scrollableIndices.clear()
+        currentSearchQuery = newText
+        currentSearchScrollIndex = -1
+
         if (newText.isNotBlank() && newText.length > NUMBER_OF_IGNORED_SYMBOLS) {
-            payloadAdapter.highlightQueryWithColors(
+            val listOfSearchQuery = payloadAdapter.highlightQueryWithColors(
                 newText,
                 backgroundSpanColor,
                 foregroundSpanColor
             )
+            if (listOfSearchQuery.isNotEmpty()) {
+                scrollableIndices.addAll(listOfSearchQuery)
+            } else {
+                payloadAdapter.resetHighlight()
+                makeToolbarSearchSummaryVisible(false)
+            }
         } else {
             payloadAdapter.resetHighlight()
+            makeToolbarSearchSummaryVisible(false)
+        }
+
+        lifecycleScope.launch {
+            delay(DELAY_FOR_SEARCH_SCROLL)
+            lifecycle.withResumed {
+                if (scrollableIndices.isNotEmpty()) {
+                    scrollToSearchedItemPosition(0)
+                } else {
+                    currentSearchScrollIndex = -1
+                }
+            }
         }
         return true
+    }
+
+    private fun makeToolbarSearchSummaryVisible(visible: Boolean = true) {
+        payloadBinding.rootSearchSummary.isVisible = visible
+    }
+
+    private fun updateToolbarText(searchResultsCount: Int, currentIndex: Int = 1) {
+        payloadBinding.searchSummary.text = SpannableStringBuilder().apply {
+            bold {
+                append("$currentIndex / $searchResultsCount")
+            }
+        }
+    }
+
+    private fun scrollToSearchedItemPosition(positionOfScrollableIndices: Int) {
+        // reset the last searched item highlight if done
+        scrollableIndices.getOrNull(currentSearchScrollIndex)?.let {
+            payloadAdapter.highlightItemWithColorOnPosition(
+                it.indexBodyLine,
+                it.indexStartOfQuerySubString,
+                currentSearchQuery,
+                backgroundSpanColor,
+                foregroundSpanColor
+            )
+        }
+
+        currentSearchScrollIndex = positionOfScrollableIndices
+        val scrollTo = scrollableIndices.getOrNull(positionOfScrollableIndices)
+        if (scrollTo != null) {
+            // highlight the next navigated item and update toolbar summary text
+            payloadAdapter.highlightItemWithColorOnPosition(
+                scrollTo.indexBodyLine,
+                scrollTo.indexStartOfQuerySubString,
+                currentSearchQuery,
+                backgroundSpanColorSearchItem,
+                foregroundSpanColor
+            )
+            updateToolbarText(scrollableIndices.size, positionOfScrollableIndices + 1)
+            makeToolbarSearchSummaryVisible()
+
+            payloadBinding.payloadRecyclerView.smoothScrollToPosition(scrollTo.indexBodyLine)
+            currentSearchScrollIndex = positionOfScrollableIndices
+        }
     }
 
     private suspend fun processPayload(
@@ -287,10 +393,12 @@ internal class TransactionPayloadFragment :
                     val text = requireContext().getString(R.string.chucker_body_omitted)
                     result.add(TransactionPayloadItem.BodyLineItem(SpannableStringBuilder.valueOf(text)))
                 }
+
                 bodyString.isBlank() -> {
                     val text = requireContext().getString(R.string.chucker_body_empty)
                     result.add(TransactionPayloadItem.BodyLineItem(SpannableStringBuilder.valueOf(text)))
                 }
+
                 else -> if (type != PayloadType.MOCK) bodyString.lines().forEach {
                     result.add(
                         TransactionPayloadItem.BodyLineItem(
@@ -317,6 +425,7 @@ internal class TransactionPayloadFragment :
                                 transaction.requestBody?.byteInputStream()?.copyTo(fos)
                                     ?: throw IOException(TRANSACTION_EXCEPTION)
                             }
+
                             PayloadType.RESPONSE -> {
                                 transaction.responseBody?.byteInputStream()?.copyTo(fos)
                                     ?: throw IOException(TRANSACTION_EXCEPTION)
@@ -335,9 +444,17 @@ internal class TransactionPayloadFragment :
         }
     }
 
+    private fun isBodyEmpty(type: PayloadType, transaction: HttpTransaction): Boolean =
+        when {
+            type == PayloadType.REQUEST && transaction.requestBody == null -> true
+            type == PayloadType.RESPONSE && transaction.responseBody == null -> true
+            else -> false
+        }
+
     companion object {
         private const val ARG_TYPE = "type"
         private const val TRANSACTION_EXCEPTION = "Transaction not ready"
+        private const val DELAY_FOR_SEARCH_SCROLL: Long = 600L
 
         private const val NUMBER_OF_IGNORED_SYMBOLS = 1
 
