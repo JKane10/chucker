@@ -27,7 +27,6 @@ class MainActivity : AppCompatActivity() {
 
     private val httpTasks by lazy {
         listOf(HttpBinHttpTask(client), DummyImageHttpTask(client), PostmanEchoHttpTask(client))
-        //listOf(SampleApiHttpTask(client))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

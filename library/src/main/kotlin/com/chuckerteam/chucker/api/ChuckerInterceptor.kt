@@ -102,7 +102,7 @@ public class ChuckerInterceptor private constructor(
     ): Response {
         // Build mock response
         val mockResponse = Response.Builder()
-            .code(200)
+            .code(mockTransaction.responseCode ?: 200)
             .sentRequestAtMillis(System.currentTimeMillis())
             .receivedResponseAtMillis(System.currentTimeMillis())
             .protocol(Protocol.get(mockTransaction.protocol ?: ""))
