@@ -230,6 +230,9 @@ internal class TransactionPayloadFragment :
         PayloadType.RESPONSE -> {
             (false == transaction?.isResponseBodyEncoded) && (0L != (transaction.responsePayloadSize))
         }
+        PayloadType.MOCK -> {
+            false
+        }
     }
 
     override fun onAttach(context: Context) {
@@ -380,8 +383,9 @@ internal class TransactionPayloadFragment :
                 val mock = viewModel.getMock(transaction)
                 result.add(
                     TransactionPayloadItem.MockBody(
-                        body = SpannableStringBuilder.valueOf(
-                            mock?.responseBody ?: bodyString
+                        body = SpannableStringBuilder(
+                            mock?.getSpannedResponseBody(context) ?:
+                            transaction.getSpannedResponseBody(context)
                         ),
                         wasEntryMocked =  mock?.shouldUseMock ?: false
                     )
