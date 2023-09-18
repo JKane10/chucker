@@ -3,11 +3,12 @@ package com.chuckerteam.chucker.internal.data.repository
 import androidx.lifecycle.LiveData
 import com.chuckerteam.chucker.internal.data.entity.HttpTransaction
 import com.chuckerteam.chucker.internal.data.entity.HttpTransactionTuple
-import com.chuckerteam.chucker.internal.data.entity.MockHttpTransaction
 import com.chuckerteam.chucker.internal.data.room.ChuckerMockDatabase
 import com.chuckerteam.chucker.internal.support.distinctUntilChanged
 
-internal class MockHttpTransactionDatabaseRepository(private val database: ChuckerMockDatabase) : MockHttpTransactionRepository {
+internal class MockHttpTransactionDatabaseRepository(
+    private val database: ChuckerMockDatabase
+) : MockHttpTransactionRepository {
 
     private val transactionDao get() = database.transactionDao()
 

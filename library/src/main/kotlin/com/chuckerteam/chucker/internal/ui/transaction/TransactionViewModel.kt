@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.map
 import androidx.lifecycle.viewModelScope
+import com.chuckerteam.chucker.api.Chucker.logger
 import com.chuckerteam.chucker.internal.data.entity.HttpTransaction
 import com.chuckerteam.chucker.internal.data.repository.RepositoryProvider
 import com.chuckerteam.chucker.internal.support.combineLatest
@@ -74,6 +75,7 @@ internal class TransactionViewModel(transactionId: Long) : ViewModel() {
             }
         } catch (e: IllegalStateException) {
             // mocking not enabled
+            logger.info("Mock Repository was not initialized: $e")
         }
     }
 

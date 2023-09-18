@@ -17,6 +17,8 @@ import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import java.io.IOException
 
+private const val HTTP_SUCCESS_CODE = 200
+
 /**
  * An OkHttp Interceptor which persists and displays HTTP activity
  * in your application for later inspection.
@@ -81,7 +83,9 @@ public class ChuckerInterceptor private constructor(
         val shouldProcessTheRequest = !skipPaths.any { it == request.url.encodedPath }
 
         return if (mockingEnabled) {
-            val mockedTransaction = RepositoryProvider.mockTransaction().getMockedTransactionByUrl(request.url.toString())
+            val mockedTransaction = RepositoryProvider.mockTransaction().getMockedTransactionByUrl(
+                request.url.toString()
+            )
             if (mockedTransaction != null && mockedTransaction.shouldUseMock) {
                 transaction.wasResponseMocked = true
                 processMockRequest(shouldProcessTheRequest, request, transaction, mockedTransaction)
@@ -101,7 +105,7 @@ public class ChuckerInterceptor private constructor(
     ): Response {
         // Build mock response
         val mockResponse = Response.Builder()
-            .code(mockTransaction.responseCode ?: 200)
+            .code(mockTransaction.responseCode ?: HTTP_SUCCESS_CODE)
             .sentRequestAtMillis(System.currentTimeMillis())
             .receivedResponseAtMillis(System.currentTimeMillis())
             .protocol(Protocol.get(mockTransaction.protocol ?: ""))

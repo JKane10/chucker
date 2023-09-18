@@ -74,11 +74,12 @@ internal class TransactionPayloadFragment :
         }
 
     private lateinit var payloadBinding: ChuckerFragmentTransactionPayloadBinding
-    private val payloadAdapter = TransactionBodyAdapter { shouldUseMock: Boolean, mockBody: String ->
-        viewModel.transaction.value?.let {
-            viewModel.writeMock(it, mockBody, shouldUseMock)
+    private val payloadAdapter =
+        TransactionBodyAdapter { shouldUseMock: Boolean, mockBody: String ->
+            viewModel.transaction.value?.let {
+                viewModel.writeMock(it, mockBody, shouldUseMock)
+            }
         }
-    }
 
     private var backgroundSpanColor: Int = Color.YELLOW
     private var foregroundSpanColor: Int = Color.RED
@@ -145,7 +146,8 @@ internal class TransactionPayloadFragment :
 
     private fun onSearchScrollerButtonClick(goNext: Boolean) {
         // hide the keyboard if visible
-        val inputMethodManager = activity?.getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
+        val inputMethodManager =
+            activity?.getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
         if (inputMethodManager.isAcceptingText) {
             activity?.currentFocus?.clearFocus()
             inputMethodManager.hideSoftInputFromWindow(view?.windowToken, 0)
@@ -227,9 +229,11 @@ internal class TransactionPayloadFragment :
         PayloadType.REQUEST -> {
             (false == transaction?.isRequestBodyEncoded) && (0L != (transaction.requestPayloadSize))
         }
+
         PayloadType.RESPONSE -> {
             (false == transaction?.isResponseBodyEncoded) && (0L != (transaction.responsePayloadSize))
         }
+
         PayloadType.MOCK -> false
     }
 
@@ -347,9 +351,7 @@ internal class TransactionPayloadFragment :
             if (type == PayloadType.REQUEST) {
                 headersString = transaction.getRequestHeadersString(true)
                 isBodyEncoded = transaction.isRequestBodyEncoded
-                bodyString = if (formatRequestBody) {
-                    transaction.getSpannedRequestBody(context)
-                } else {
+                bodyString = if (formatRequestBody) { transaction.getSpannedRequestBody(context) } else {
                     transaction.requestBody ?: ""
                 }
             } else {
@@ -360,10 +362,7 @@ internal class TransactionPayloadFragment :
             if (headersString.isNotBlank()) {
                 result.add(
                     TransactionPayloadItem.HeaderItem(
-                        HtmlCompat.fromHtml(
-                            headersString,
-                            HtmlCompat.FROM_HTML_MODE_LEGACY
-                        )
+                        HtmlCompat.fromHtml(headersString, HtmlCompat.FROM_HTML_MODE_LEGACY)
                     )
                 )
             }
@@ -377,31 +376,21 @@ internal class TransactionPayloadFragment :
                 return@withContext result
             }
 
-            if (type == PayloadType.MOCK) {
-                val mock = viewModel.getMock(transaction)
-                result.add(
-                    TransactionPayloadItem.MockBody(
-                        body = SpannableStringBuilder(
-                            mock?.getSpannedResponseBody(context) ?:
-                            transaction.getSpannedResponseBody(context)
-                        ),
-                        wasEntryMocked =  mock?.shouldUseMock ?: false
-                    )
-                )
-            }
-
             when {
                 isBodyEncoded -> {
                     val text = requireContext().getString(R.string.chucker_body_omitted)
-                    result.add(TransactionPayloadItem.BodyLineItem(SpannableStringBuilder.valueOf(text)))
+                    result.add(
+                        TransactionPayloadItem.BodyLineItem(SpannableStringBuilder.valueOf(text))
+                    )
                 }
-
                 bodyString.isBlank() -> {
                     val text = requireContext().getString(R.string.chucker_body_empty)
-                    result.add(TransactionPayloadItem.BodyLineItem(SpannableStringBuilder.valueOf(text)))
+                    result.add(
+                        TransactionPayloadItem.BodyLineItem(SpannableStringBuilder.valueOf(text))
+                    )
                 }
-
-                else -> if (type != PayloadType.MOCK) bodyString.lines().forEach {
+                (type == PayloadType.MOCK) -> { generateMockLineItems(transaction, result) }
+                else -> bodyString.lines().forEach {
                     result.add(
                         TransactionPayloadItem.BodyLineItem(
                             if (it is SpannableStringBuilder) {
@@ -415,6 +404,23 @@ internal class TransactionPayloadFragment :
             }
             return@withContext result
         }
+    }
+
+    private suspend fun generateMockLineItems(
+        transaction: HttpTransaction,
+        result: MutableList<TransactionPayloadItem>
+    ) {
+        val mock = viewModel.getMock(transaction)
+        result.add(
+            TransactionPayloadItem.MockBody(
+                body = SpannableStringBuilder(
+                    mock?.getSpannedResponseBody(
+                        context
+                    ) ?: transaction.getSpannedResponseBody(context)
+                ),
+                wasEntryMocked = mock?.shouldUseMock ?: false
+            )
+        )
     }
 
     private suspend fun saveToFile(type: PayloadType, uri: Uri, transaction: HttpTransaction): Boolean {
